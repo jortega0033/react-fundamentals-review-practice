@@ -21,14 +21,16 @@ type SortOrder = 'newest' | 'oldest';
 interface FilterState {
   status: StatusFilter;
   sortOrder: SortOrder;
+  grouped: boolean;
 }
 
 type FilterAction =
   | { type: 'SET_STATUS'; status: StatusFilter }
   | { type: 'SET_SORT'; sortOrder: SortOrder }
+  | { type: 'TOGGLE_GROUPED' }
   | { type: 'RESET' };
 
-const initialState: FilterState = { status: 'all', sortOrder: 'newest' };
+const initialState: FilterState = { status: 'all', sortOrder: 'newest', grouped: false };
 
 function filterReducer(state: FilterState, action: FilterAction): FilterState {
   switch (action.type) {
@@ -36,6 +38,9 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
       return { ...state, status: action.status };
     case 'SET_SORT':
       return { ...state, sortOrder: action.sortOrder };
+    case 'TOGGLE_GROUPED':
+      state.grouped = !state.grouped;
+      return state;
     case 'RESET':
       return initialState;
     default:
@@ -49,8 +54,10 @@ export function useTaskFilters() {
   return {
     status: state.status,
     sortOrder: state.sortOrder,
+    grouped: state.grouped,
     setStatus: (status: StatusFilter) => dispatch({ type: 'SET_STATUS', status }),
     setSortOrder: (sortOrder: SortOrder) => dispatch({ type: 'SET_SORT', sortOrder }),
+    toggleGrouped: () => dispatch({ type: 'TOGGLE_GROUPED' }),
     reset: () => dispatch({ type: 'RESET' }),
   };
 }

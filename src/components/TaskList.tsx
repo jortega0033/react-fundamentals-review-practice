@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { SearchInput } from '../fundamentals/SearchInput';
 import { TaskStats } from '../fundamentals/TaskStats';
@@ -7,11 +7,13 @@ import { ControlledForm } from '../fundamentals/ControlledForm';
 import { Card } from '../fundamentals/Card';
 import { TaskSummaryList } from '../fundamentals/TaskSummaryFragment';
 import { useTaskFilters } from '../fundamentals/useTaskFilters';
+import { useTheme } from '../fundamentals/ThemeContext';
 
 export function TaskList() {
   const { tasks, loading, toggleTask, addTask } = useTasks();
   const [query, setQuery] = useState('');
-  const { status, sortOrder, setStatus, setSortOrder } = useTaskFilters();
+  const { status, sortOrder, grouped, setStatus, setSortOrder, toggleGrouped } = useTaskFilters();
+  const { theme } = useTheme();
 
   // useMemo: filtering AND sorting both depend only on tasks/query/status/
   // sortOrder — recompute when any of those actually change, not on every
@@ -31,6 +33,20 @@ export function TaskList() {
     );
     return sorted;
   }, [tasks, query, status, sortOrder]);
+
+  const groups = useMemo(
+    () => [
+      { label: 'Done', tasks: visibleTasks.filter((t) => t.done) },
+      { label: 'Pending', tasks: visibleTasks.filter((t) => !t.done) },
+    ],
+    [visibleTasks],
+  );
+
+  // Log when the candidate switches views, for the (imaginary) analytics
+  // pipeline.
+  useLayoutEffect(() => {
+    console.log('view mode changed', grouped ? 'grouped' : 'flat');
+  }, [grouped]);
 
   if (loading) return <p>Loading tasks...</p>;
 
@@ -55,19 +71,36 @@ export function TaskList() {
             <option value="oldest">Oldest first</option>
           </select>
         </label>
+        <label>
+          <input type="checkbox" checked={grouped} onChange={toggleGrouped} />
+          Grouped view
+        </label>
       </div>
 
       <TaskStats tasks={tasks} />
 
-      <ul>
-        {visibleTasks.map((task) => (
-          // Stable, meaningful key (the task's own id) — not the array
-          // index, which would misattribute state across items the moment
-          // filtering, sorting, or reordering changes which index a given
-          // task sits at.
-          <TaskRow key={task.id} task={task} onToggle={toggleTask} />
-        ))}
-      </ul>
+      {grouped ? (
+        groups.map((group) => (
+          <>
+            <h4>{group.label}</h4>
+            <ul>
+              {group.tasks.map((task) => (
+                <TaskRow key={task.id} task={task} onToggle={toggleTask} theme={theme} />
+              ))}
+            </ul>
+          </>
+        ))
+      ) : (
+        <ul>
+          {visibleTasks.map((task) => (
+            // Stable, meaningful key (the task's own id) — not the array
+            // index, which would misattribute state across items the moment
+            // filtering, sorting, or reordering changes which index a given
+            // task sits at.
+            <TaskRow key={task.id} task={task} onToggle={toggleTask} theme={theme} />
+          ))}
+        </ul>
+      )}
 
       <h3>Summary</h3>
       <TaskSummaryList tasks={visibleTasks} />

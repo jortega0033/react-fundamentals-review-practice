@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TaskList } from './TaskList';
+import { ThemeProvider } from '../fundamentals/ThemeContext';
 
 // The task title now appears twice by design (the task row, and the
 // Summary <dl> below it) — scope queries to the list so the assertion
@@ -12,9 +13,19 @@ function taskListRegion() {
   return within(screen.getByRole('list'));
 }
 
+// TaskList reads theme via useTheme(), which throws outside a provider —
+// same wrapping App.tsx does for real.
+function renderTaskList() {
+  return render(
+    <ThemeProvider>
+      <TaskList />
+    </ThemeProvider>,
+  );
+}
+
 describe('TaskList', () => {
   it('renders tasks once loaded', async () => {
-    render(<TaskList />);
+    renderTaskList();
     await waitFor(() => {
       expect(taskListRegion().getByText('Write quarterly report')).toBeInTheDocument();
     });
@@ -22,7 +33,7 @@ describe('TaskList', () => {
 
   it('adds a new task via the controlled form', async () => {
     const user = userEvent.setup();
-    render(<TaskList />);
+    renderTaskList();
     await waitFor(() => {
       expect(taskListRegion().getByText('Write quarterly report')).toBeInTheDocument();
     });
