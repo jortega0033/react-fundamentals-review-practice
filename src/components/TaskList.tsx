@@ -5,13 +5,9 @@ import { TaskStats } from '../fundamentals/TaskStats';
 import { TaskRow } from '../fundamentals/TaskRow';
 
 export function TaskList() {
-  const { tasks, loading, toggleTask } = useTasks();
+  const { tasks, loading, toggleTask, updateTaskTitle, viewCount } = useTasks();
   const [query, setQuery] = useState('');
 
-  // useMemo: filtering is cheap here, but the pattern matters more than the
-  // size of this particular list — re-filter only when tasks or the query
-  // actually change, not on every unrelated re-render (e.g. the theme
-  // toggle in the header).
   const filteredTasks = useMemo(
     () => tasks.filter((task) => task.title.toLowerCase().includes(query.toLowerCase())),
     [tasks, query],
@@ -23,13 +19,15 @@ export function TaskList() {
     <div>
       <SearchInput onSearch={setQuery} />
       <TaskStats tasks={tasks} />
+      <p>Edits this session: {viewCount}</p>
       <ul>
         {filteredTasks.map((task) => (
-          // Stable, meaningful key (the task's own id) — not the array
-          // index, which would misattribute state across items the moment
-          // filtering or reordering changes which index a given task sits
-          // at.
-          <TaskRow key={task.id} task={task} onToggle={toggleTask} />
+          <TaskRow
+            key={task.id}
+            task={task}
+            onToggle={(id) => toggleTask(id)}
+            onRename={updateTaskTitle}
+          />
         ))}
       </ul>
     </div>
