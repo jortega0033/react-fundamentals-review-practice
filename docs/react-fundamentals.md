@@ -29,7 +29,27 @@ one-directional flow is what makes a large React tree possible to reason
 about at all. See `src/components/TaskList.tsx` passing `task` and
 `onToggle` down to `src/fundamentals/TaskRow.tsx` as a real example.
 
-## 2. State — `useState`
+## 2. Composition — the `children` prop
+
+Every component already has an implicit prop called `children`:
+`<Card>stuff</Card>` is really just `<Card children={"stuff"} />`. This is
+how React avoids a very deep, very common trap — a wrapper component that
+needs a dozen `render*` or `*Content` props just to let its caller
+configure every part of its output.
+
+```tsx
+function Card({ title, children }: { title: string; children: ReactNode }) {
+  return <section><h2>{title}</h2>{children}</section>;
+}
+// caller writes normal JSX, not a config object:
+<Card title="Tasks"><TaskList /></Card>
+```
+
+Reach for `children` (or, when a component needs more than one insertion
+point, a few distinctly-named `ReactNode` props) any time you'd otherwise
+be threading unrelated content through props. See `src/fundamentals/Card.tsx`.
+
+## 3. State — `useState`
 
 Props are how a component receives data. **State** is data a component
 owns and can change itself, over time, in response to something (a click,
@@ -53,7 +73,7 @@ warning the first time it goes from `undefined` to a real string ("a
 component is changing an uncontrolled input to be controlled"). Always
 give `useState` a real starting value of the correct type.
 
-## 3. Rendering and re-renders
+## 4. Rendering and re-renders
 
 A component re-renders when its own state changes, when its props change,
 or when its parent re-renders (which re-renders every child underneath it,
@@ -68,7 +88,7 @@ performance questions: "why does this re-render so often" almost always
 traces back to a parent re-rendering for an unrelated reason, not to
 anything wrong with the child itself.
 
-## 4. Rules of Hooks
+## 5. Rules of Hooks
 
 Every `use*` function (`useState`, `useEffect`, `useRef`, and so on) is a
 **Hook**, and hooks follow two rules that aren't optional:
@@ -87,7 +107,7 @@ state silently attaches to the wrong hook. This is genuinely one of the
 first things worth checking in an unfamiliar component: is every hook
 called unconditionally, every render, in the same order?
 
-## 5. Event handling
+## 6. Event handling
 
 Event handlers are just functions passed to props like `onClick`,
 `onChange`, `onSubmit`. React wraps the browser's native events in its own
@@ -104,7 +124,7 @@ necessary for anything covered here.
 during render, instead of waiting for a click. Only `onClick={handleClick}`
 or `onClick={() => handleClick()}` actually wait for the event.
 
-## 6. Conditional rendering
+## 7. Conditional rendering
 
 See `src/fundamentals/ConditionalRendering.tsx` for a worked comparison of
 the three common approaches — early return, ternary, and `&&` — including
@@ -112,24 +132,37 @@ the specific footgun with `&&`: if the left side is the number `0` (not
 `false`), React renders the literal `0` on screen instead of nothing.
 `items.length && <List />` is a real, common bug for exactly this reason.
 
-## 7. Lists and keys
+## 8. Fragments
+
+A component must return exactly one root element — but "one element"
+doesn't have to mean one extra `<div>` wrapped around everything. A
+**Fragment** (`<>...</>`, or `<Fragment key={...}>` when a key is needed)
+groups several elements together with no real DOM node of its own. A
+stray wrapper div is a common, avoidable source of broken CSS — an
+unwanted flex/grid item, an extra layout box nobody asked for — and
+unnecessary DOM depth. See `src/fundamentals/TaskSummaryFragment.tsx`.
+
+## 9. Lists and keys
 
 Rendering an array with `.map()` requires a `key` prop on each resulting
 element — a string or number that's stable and unique **per item**, not
-per position. React uses the key to match up elements across renders: with
-a good key, if item 3 is deleted, React understands "item 4 is still item
-4," and correctly keeps its own local state (like an open/closed toggle)
-attached to the right item. With no key, or with the array *index* as the
-key, React instead assumes "whatever is now in position 3 IS position 3,"
-and if the list reorders or an item is removed, state can silently attach
-to the wrong row — an input's contents jumping to a different item, a
-component not resetting when its underlying data changed underneath it.
+per position (this is also why mapping to Fragments still needs the
+explicit `<Fragment key={...}>` form from the section above, not the bare
+`<>` shorthand, which can't take a key at all). React uses the key to
+match up elements across renders: with a good key, if item 3 is deleted,
+React understands "item 4 is still item 4," and correctly keeps its own
+local state (like an open/closed toggle) attached to the right item. With
+no key, or with the array *index* as the key, React instead assumes
+"whatever is now in position 3 IS position 3," and if the list reorders or
+an item is removed, state can silently attach to the wrong row — an
+input's contents jumping to a different item, a component not resetting
+when its underlying data changed underneath it.
 
 Use a real, stable identifier — a database id, not the index — whenever
 the list can reorder, filter, or have items added/removed anywhere but the
 end. See `src/components/TaskList.tsx`, keyed on `task.id`.
 
-## 8. Forms and controlled inputs
+## 10. Forms and controlled inputs
 
 See `src/fundamentals/ControlledForm.tsx`. A **controlled** input's
 displayed value comes from React state (`value={title}`), and every
@@ -144,7 +177,7 @@ that "state is the source of truth" guarantee. Mixing the two on the same
 input (sometimes controlled, sometimes not) is the classic mistake — see
 the `useState` section above.
 
-## 9. `useEffect` — side effects
+## 11. `useEffect` — side effects
 
 A **side effect** is anything a component does that reaches outside its
 own render output: fetching data, subscribing to an event, starting a
@@ -174,9 +207,32 @@ Two parts matter as much as the effect itself:
   update state that no longer exists.
 
 See `src/fundamentals/SearchInput.tsx` for a correctly-cleaned-up debounce
-timer, and the review PR for what a missing cleanup actually looks like.
+timer, and the review PRs for what a missing cleanup actually looks like.
 
-## 10. `useRef`
+**Aside — why does my effect run twice in development?** `React.StrictMode`
+(wrapping `<App />` in `src/main.tsx`) deliberately mounts, unmounts, and
+re-mounts every component once in development only, specifically to
+surface an effect that isn't safely repeatable — usually a missing or
+incorrect cleanup function. It's not a bug in React; it's React trying to
+catch the bug in your effect before your users do. It does not happen in
+production builds.
+
+## 12. `useLayoutEffect` vs `useEffect`
+
+Same API, different timing. `useEffect` runs AFTER the browser has
+painted the screen — fine for almost everything, and the right default.
+`useLayoutEffect` runs BEFORE the browser paints, synchronously, right
+after React updates the DOM — it blocks the paint until it finishes.
+
+Reach for `useLayoutEffect` only when you can name the visual flicker
+`useEffect`'s later timing would actually cause — typically, measuring a
+just-rendered element's real size to immediately position something
+relative to it. Using it by default "because it runs sooner" is a
+performance mistake: it holds up every single paint for work that, most of
+the time, didn't need to block anything. See
+`src/fundamentals/MeasuredBadge.tsx`.
+
+## 13. `useRef`
 
 `useRef` returns a mutable box (`{ current: ... }`) that survives across
 renders, but — unlike `useState` — changing `.current` does **not**
@@ -196,11 +252,11 @@ Two genuinely different jobs both go through `useRef`:
 Since changing `.current` doesn't re-render, the screen shows stale data
 even though the ref's real value did update — the fix is always
 `useState` instead. See `src/fundamentals/SearchInput.tsx` for both
-correct uses side by side, and the review PR for exactly this mistake (a
+correct uses side by side, and the review PRs for exactly this mistake (a
 counter tracked in a ref, displayed in JSX, that silently never updates on
 screen).
 
-## 11. `useContext`
+## 14. `useContext`
 
 Passing a prop through three or four components that don't use it
 themselves, purely so a component further down can read it, is called
@@ -224,7 +280,7 @@ provided anywhere above, which is harder to trace by reading alone). Reach
 for it specifically when the alternative is drilling through several
 uninvolved layers. See `src/fundamentals/ThemeContext.tsx`.
 
-## 12. `useMemo`
+## 15. `useMemo`
 
 `useMemo` caches the RESULT of a computation, recalculating it only when
 the values it actually depends on change — not on every render the
@@ -245,7 +301,7 @@ without saving anything real. Reach for it when the computation is
 actually non-trivial, or when the RESULT'S IDENTITY matters (see
 `useCallback` next). See `src/fundamentals/TaskStats.tsx`.
 
-## 13. `useCallback` and `React.memo`
+## 16. `useCallback` and `React.memo`
 
 These two exist to solve the same problem together, and rarely make sense
 apart from each other.
@@ -271,10 +327,10 @@ toggleTask(id)}` instead of passing `toggleTask` (already stable via
 `useCallback`) directly. The memoization silently does nothing; the
 component still re-renders every time, and nothing about it looks broken
 unless you know to check. See `src/fundamentals/TaskRow.tsx` +
-`src/hooks/useTasks.ts` for the correct pairing, and the review PR for
+`src/hooks/useTasks.ts` for the correct pairing, and the review PRs for
 this exact mistake introduced.
 
-## 14. Custom hooks
+## 17. Custom hooks
 
 Any function whose name starts with `use` and that calls other hooks
 inside it is a **custom hook** — the mechanism for extracting reusable
@@ -295,7 +351,7 @@ A custom hook follows the exact same Rules of Hooks as everything else
 of thing, just a function that happens to bundle hook calls together. See
 `src/fundamentals/usePrevious.ts` and `src/hooks/useTasks.ts`.
 
-## 15. `useReducer`
+## 18. `useReducer`
 
 `useState` is enough for most components. `useReducer` earns its place
 once several pieces of state change TOGETHER, in specific, nameable ways
@@ -316,11 +372,20 @@ function reducer(state: State, action: Action): State {
 const [state, dispatch] = useReducer(reducer, initialState);
 ```
 
-It's not a wholesale `useState` replacement — one independent value (a
-search box's text, a modal's open/closed flag) stays simpler as its own
-`useState`. See `src/fundamentals/useTaskFilters.ts`.
+**Classic mistake:** mutating `state` directly inside the reducer instead
+of returning a new object (`state.status = action.status; return state;`).
+React compares the OLD and NEW state by reference to decide whether to
+re-render — mutating in place means the reference never changes, so React
+concludes "nothing happened" and silently skips the re-render, even though
+the underlying object did change. Every branch of a reducer must return a
+new value, never mutate and return the same one.
 
-## 16. Error boundaries
+It's not a wholesale `useState` replacement either — one independent value
+(a search box's text, a modal's open/closed flag) stays simpler as its own
+`useState`. See `src/fundamentals/useTaskFilters.ts`, wired into the real
+status/sort controls in `src/components/TaskList.tsx`.
+
+## 19. Error boundaries
 
 The one place a class component still matters — there's no hook
 equivalent, because catching a render error requires
@@ -334,10 +399,10 @@ It does **not** catch errors in event handlers (those need a normal
 try/catch), errors in async code (a rejected promise), or an error in the
 boundary's own render method. See `src/fundamentals/ErrorBoundary.tsx`.
 
-## Reading this repo's practice PR
+## Reading this repo's practice PRs
 
 Every mistake named above ("classic mistake: ...") appears at least once,
-for real, somewhere in this repo's open pull request — deliberately, and
+for real, somewhere in this repo's open pull requests — deliberately, and
 without being called out in the PR description. That's the point: a real
 code review means recognizing these patterns on sight in code you've never
 seen before, the same way you'd recognize them here now that they're

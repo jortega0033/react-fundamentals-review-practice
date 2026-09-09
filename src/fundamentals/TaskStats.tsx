@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { Task } from '../api/tasksApi';
 import { usePrevious } from './usePrevious';
+import { MeasuredBadge } from './MeasuredBadge';
 
 /**
  * useMemo — caches an expensive derived value so it's only recomputed when
@@ -23,7 +24,7 @@ export function TaskStats({ tasks }: { tasks: Task[] }) {
 
   return (
     <p>
-      {doneCount} of {tasks.length} done
+      <MeasuredBadge label={`${doneCount} of ${tasks.length} done`} />
       {delta !== 0 && <span> ({delta > 0 ? '+' : ''}{delta} since last check)</span>}
     </p>
   );

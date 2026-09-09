@@ -17,3 +17,36 @@ body {
   text-decoration: line-through;
   color: #999;
 }
+
+.card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+.filters {
+  display: flex;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85em;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef;
+  font-size: 0.9em;
+}
+
+.task-delete {
+  cursor: pointer;
+  color: #b00;
+  padding: 0 6px;
+}
