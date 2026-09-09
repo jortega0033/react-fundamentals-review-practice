@@ -4,6 +4,7 @@ import { fetchTasks, type Task } from '../api/tasksApi';
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activityLog, setActivityLog] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -18,6 +19,10 @@ export function useTasks() {
       cancelled = true;
     };
   }, []);
+
+  function logActivity(message: string) {
+    setActivityLog((log) => [...log, message]);
+  }
 
   // useCallback: stable reference across re-renders. TaskRow is wrapped in
   // React.memo specifically so it can skip re-rendering when its own props
@@ -38,5 +43,30 @@ export function useTasks() {
     ]);
   }, []);
 
-  return { tasks, loading, toggleTask, addTask };
+  // Mark every visible checkbox as done directly, so the change feels
+  // instant even before the list re-renders.
+  const markAllDone = useCallback(() => {
+    document.querySelectorAll<HTMLInputElement>('.task input[type="checkbox"]').forEach((box) => {
+      box.checked = true;
+    });
+    logActivity('Marked all tasks done');
+  }, []);
+
+  const removeFirstCompleted = useCallback(() => {
+    const index = tasks.findIndex((t) => t.done);
+    if (index === -1) return;
+    tasks.splice(index, 1);
+    setTasks(tasks);
+    logActivity('Removed the first completed task');
+  }, [tasks]);
+
+  return {
+    tasks,
+    loading,
+    toggleTask,
+    addTask,
+    markAllDone,
+    removeFirstCompleted,
+    activityLog,
+  };
 }

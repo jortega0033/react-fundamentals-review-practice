@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { SearchInput } from '../fundamentals/SearchInput';
 import { TaskStats } from '../fundamentals/TaskStats';
@@ -7,9 +7,12 @@ import { ControlledForm } from '../fundamentals/ControlledForm';
 import { Card } from '../fundamentals/Card';
 import { TaskSummaryList } from '../fundamentals/TaskSummaryFragment';
 import { useTaskFilters } from '../fundamentals/useTaskFilters';
+import { BulkActions } from '../fundamentals/BulkActions';
+import { ActivityLog } from '../fundamentals/ActivityLog';
 
 export function TaskList() {
-  const { tasks, loading, toggleTask, addTask } = useTasks();
+  const { tasks, loading, toggleTask, addTask, markAllDone, removeFirstCompleted, activityLog } =
+    useTasks();
   const [query, setQuery] = useState('');
   const { status, sortOrder, setStatus, setSortOrder } = useTaskFilters();
 
@@ -31,6 +34,12 @@ export function TaskList() {
     );
     return sorted;
   }, [tasks, query, status, sortOrder]);
+
+  // Keep the browser tab honest about how many tasks are left.
+  const stats = { done: tasks.filter((t) => t.done).length, total: tasks.length };
+  useEffect(() => {
+    document.title = `Tasks (${stats.done}/${stats.total})`;
+  }, [stats]);
 
   if (loading) return <p>Loading tasks...</p>;
 
@@ -57,6 +66,8 @@ export function TaskList() {
         </label>
       </div>
 
+      <BulkActions onMarkAllDone={markAllDone} onRemoveFirstCompleted={removeFirstCompleted} />
+
       <TaskStats tasks={tasks} />
 
       <ul>
@@ -71,6 +82,9 @@ export function TaskList() {
 
       <h3>Summary</h3>
       <TaskSummaryList tasks={visibleTasks} />
+
+      <h3>Activity</h3>
+      <ActivityLog entries={activityLog} />
     </Card>
   );
 }
