@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import type { Task } from '../api/tasksApi';
+import { StatusBadge } from './StatusBadge';
 
 /**
  * React.memo skips a re-render when props are shallowly equal to last time.
@@ -15,9 +16,11 @@ import type { Task } from '../api/tasksApi';
 export const TaskRow = memo(function TaskRow({
   task,
   onToggle,
+  theme,
 }: {
   task: Task;
   onToggle: (id: number) => void;
+  theme: 'light' | 'dark';
 }) {
   return (
     <li className={`task${task.done ? ' done' : ''}`}>
@@ -28,6 +31,7 @@ export const TaskRow = memo(function TaskRow({
         aria-label={`Mark "${task.title}" as done`}
       />
       <span>{task.title}</span>
+      <StatusBadge done={task.done} theme={theme} />
     </li>
   );
 });
