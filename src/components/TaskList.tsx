@@ -3,9 +3,10 @@ import { useTasks } from '../hooks/useTasks';
 import { SearchInput } from '../fundamentals/SearchInput';
 import { TaskStats } from '../fundamentals/TaskStats';
 import { TaskRow } from '../fundamentals/TaskRow';
+import { ControlledForm } from '../fundamentals/ControlledForm';
 
 export function TaskList() {
-  const { tasks, loading, toggleTask } = useTasks();
+  const { tasks, loading, toggleTask, addTask } = useTasks();
   const [query, setQuery] = useState('');
 
   // useMemo: filtering is cheap here, but the pattern matters more than the
@@ -21,6 +22,7 @@ export function TaskList() {
 
   return (
     <div>
+      <ControlledForm onSubmit={(title) => addTask(title)} />
       <SearchInput onSearch={setQuery} />
       <TaskStats tasks={tasks} />
       <ul>

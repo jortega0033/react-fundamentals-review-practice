@@ -1,15 +1,24 @@
 # Task Board
 
-A small internal task tracker, and a reference for core React fundamentals —
-each concept lives in its own small, commented file under `src/fundamentals/`,
-composed together in the real `TaskList` feature rather than left as isolated
-demos:
+A small internal task tracker, and a working reference for core React
+fundamentals. Start with **[`docs/react-fundamentals.md`](docs/react-fundamentals.md)**
+— a guide written for someone who's never used React, explaining each
+concept below and linking to the real code that demonstrates it.
 
-- `ThemeContext.tsx` — `useContext`, avoiding prop drilling
-- `SearchInput.tsx` — `useRef` for both DOM access and a mutable
+- `fundamentals/ThemeContext.tsx` — `useContext`, avoiding prop drilling
+- `fundamentals/SearchInput.tsx` — `useRef` for DOM access AND a mutable
   non-rendering value (debounce timer), plus effect cleanup
-- `usePrevious.ts` — a custom hook composing `useRef` + `useEffect`
-- `TaskStats.tsx` — `useMemo` for a derived value
-- `TaskRow.tsx` — `React.memo`, paired with `useCallback` in `useTasks.ts`
+- `fundamentals/usePrevious.ts` — a custom hook composing `useRef` + `useEffect`
+- `fundamentals/TaskStats.tsx` — `useMemo` for a derived value
+- `fundamentals/TaskRow.tsx` + `hooks/useTasks.ts` — `React.memo` paired
+  with `useCallback`
+- `fundamentals/ControlledForm.tsx` — controlled inputs, a real form
+- `fundamentals/ConditionalRendering.tsx` — early return vs ternary vs `&&`
+- `fundamentals/useTaskFilters.ts` — `useReducer`, and when it earns its
+  place over several `useState` calls
+- `fundamentals/ErrorBoundary.tsx` — the one place a class component still
+  matters
 
-See open PRs for work in progress.
+See open PRs for work in progress — every "classic mistake" the guide
+names shows up for real, at least once, somewhere in the open PR, without
+being called out. That's the practice.

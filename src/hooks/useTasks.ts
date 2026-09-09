@@ -31,5 +31,12 @@ export function useTasks() {
     );
   }, []);
 
-  return { tasks, loading, toggleTask };
+  const addTask = useCallback((title: string) => {
+    setTasks((current) => [
+      ...current,
+      { id: Date.now(), title, done: false, ownerEmail: 'you@example.com' },
+    ]);
+  }, []);
+
+  return { tasks, loading, toggleTask, addTask };
 }
